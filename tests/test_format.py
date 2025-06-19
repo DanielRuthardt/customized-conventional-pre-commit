@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from conventional_pre_commit.format import Commit, ConventionalCommit, is_conventional
+from conventional_pre_commit.format import Commit, ConventionalCommit, CustomizedConventionalCommit, is_conventional, is_customized_conventional
 
 CUSTOM_TYPES = ["one", "two"]
 
@@ -21,6 +21,11 @@ def conventional_commit() -> ConventionalCommit:
 def conventional_commit_scope_required(conventional_commit) -> ConventionalCommit:
     conventional_commit.scope_optional = False
     return conventional_commit
+
+
+@pytest.fixture
+def customized_conventional_commit() -> CustomizedConventionalCommit:
+    return CustomizedConventionalCommit()
 
 
 def test_commit_init():
@@ -756,3 +761,169 @@ def test_is_valid__missing_delimiter(conventional_commit):
 )
 def test_is_conventional(input, expected_result):
     assert is_conventional(input) == expected_result
+
+
+# Tests for CustomizedConventionalCommit (GitMoji format)
+
+def test_customized_conventional_commit_init():
+    commit = CustomizedConventionalCommit()
+    assert len(commit.emojis) > 0
+    assert "🔖" in commit.emojis
+    assert "⚡️" in commit.emojis
+    assert "🔧" in commit.emojis
+
+
+def test_customized_conventional_commit_custom_emojis():
+    custom_emojis = ["🔖", "⚡️", "🔧"]
+    commit = CustomizedConventionalCommit(emojis=custom_emojis)
+    assert commit.emojis == custom_emojis
+
+
+def test_r_emoji(customized_conventional_commit):
+    regex = re.compile(customized_conventional_commit.r_emoji)
+
+    assert regex.match("🔖")
+    assert regex.match("⚡️")
+    assert regex.match("🔧")
+    assert not regex.match("invalid")
+
+
+def test_r_description(customized_conventional_commit):
+    regex = re.compile(customized_conventional_commit.r_description)
+
+    assert regex.match(" Use latest versions")
+    assert not regex.match("Use latest versions")  # Must start with space
+
+
+def test_customized_regex(customized_conventional_commit):
+    regex = customized_conventional_commit.regex
+
+    assert isinstance(regex, re.Pattern)
+    assert "emoji" in regex.groupindex
+    assert "description" in regex.groupindex
+    assert "body" in regex.groupindex
+
+
+def test_customized_match(customized_conventional_commit):
+    match = customized_conventional_commit.match("🔖 Use latest versions of all items")
+
+    assert isinstance(match, re.Match)
+    assert match.group("emoji") == "🔖"
+    assert match.group("description").strip() == "Use latest versions of all items"
+    assert match.group("body") == ""
+
+
+def test_customized_match_multiline(customized_conventional_commit):
+    match = customized_conventional_commit.match(
+        """⚡️ Slightly upsize build storage
+
+This change increases the build storage capacity
+to handle larger repositories more efficiently.
+"""
+    )
+    assert isinstance(match, re.Match)
+    assert match.group("emoji") == "⚡️"
+    assert match.group("description").strip() == "Slightly upsize build storage"
+    assert "This change increases" in match.group("body")
+
+
+def test_customized_match_invalid_emoji(customized_conventional_commit):
+    match = customized_conventional_commit.match("Invalid commit without emoji")
+
+    assert isinstance(match, re.Match)
+    assert match.group("emoji") is None
+    assert match.group("description") is None
+
+
+@pytest.mark.parametrize("emoji", ["🔖", "⚡️", "🔧", "✨", "🐛", "📝"])
+def test_is_valid__gitmoji_emoji(customized_conventional_commit, emoji):
+    input = f"{emoji} Fix authentication bug"
+
+    assert customized_conventional_commit.is_valid(input)
+
+
+def test_is_valid__gitmoji_multiline(customized_conventional_commit):
+    input = """🔖 Use latest versions of all items
+
+This commit updates all dependencies to their latest versions.
+"""
+
+    assert customized_conventional_commit.is_valid(input)
+
+
+def test_is_valid__gitmoji_invalid_no_emoji(customized_conventional_commit):
+    input = "Fix authentication bug"
+
+    assert not customized_conventional_commit.is_valid(input)
+
+
+def test_is_valid__gitmoji_invalid_no_description(customized_conventional_commit):
+    input = "🔖"
+
+    assert not customized_conventional_commit.is_valid(input)
+
+
+def test_is_valid__gitmoji_invalid_no_space(customized_conventional_commit):
+    input = "🔖Fix authentication bug"
+
+    assert not customized_conventional_commit.is_valid(input)
+
+
+def test_is_valid__gitmoji_bad_multiline(customized_conventional_commit):
+    input = """🔖 Use latest versions
+    More message without proper separator
+    """
+
+    assert not customized_conventional_commit.is_valid(input)
+
+
+def test_errors_gitmoji_no_emoji(customized_conventional_commit):
+    errors = customized_conventional_commit.errors("Invalid commit message")
+
+    assert "emoji" in errors
+    assert "description" in errors
+
+
+def test_errors_gitmoji_no_description(customized_conventional_commit):
+    errors = customized_conventional_commit.errors("🔖")
+
+    assert "description" in errors
+    assert "emoji" not in errors
+
+
+@pytest.mark.parametrize(
+    "input,expected_result",
+    [
+        ("🔖 Use latest versions of all items", True),
+        ("⚡️ Slightly upsize build storage", True),
+        ("🔧 Update enabled items directory", True),
+        (
+            """✨ Add new feature
+
+Extended description of the new feature.
+""",
+            True,
+        ),
+        ("Invalid commit without emoji", False),
+        ("🔖", False),  # No description
+        ("🔖Fix without space", False),  # No space after emoji
+        (
+            """🔖 Use latest versions
+            Extended body without proper separator
+            """,
+            False,
+        ),
+    ],
+)
+def test_is_customized_conventional(input, expected_result):
+    assert is_customized_conventional(input) == expected_result
+
+
+def test_is_customized_conventional_custom_emojis():
+    custom_emojis = ["🔖", "⚡️"]
+    input = "🔥 Remove deprecated code"  # Not in custom emojis
+
+    assert not is_customized_conventional(input, emojis=custom_emojis)
+
+    input = "🔖 Use latest versions"  # In custom emojis
+    assert is_customized_conventional(input, emojis=custom_emojis)

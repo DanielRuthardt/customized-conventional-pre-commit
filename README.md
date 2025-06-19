@@ -1,7 +1,13 @@
 # conventional-pre-commit
 
 A [`pre-commit`](https://pre-commit.com) hook to check commit messages for
-[Conventional Commits](https://conventionalcommits.org) formatting.
+**Customized Conventional Commits** formatting using [GitMoji](https://gitmoji.dev/).
+
+This tool enforces a standardized format for commit messages using GitMoji emojis instead of traditional types, ensuring clear and concise release notes.
+
+**Format:** `<emoji> <description>`
+
+In contrast to the original [Conventional Commits](https://www.conventionalcommits.org/) standard, we use [GitMoji](https://gitmoji.dev/) to represent the type of the commit, and we omit the optional scope.
 
 Works with Python >= 3.8.
 
@@ -51,8 +57,8 @@ Conventional Commit......................................................Failed
 - exit code: 1
 
 [Bad commit message] >> add a new feature
-Your commit message does not follow Conventional Commits formatting
-https://www.conventionalcommits.org/
+Your commit message does not follow Customized Conventional Commits formatting
+https://gitmoji.dev/
 ```
 
 And with the `--verbose` arg:
@@ -67,30 +73,37 @@ Conventional Commit......................................................Failed
 - exit code: 1
 
 [Bad commit message] >> add a new feature
-Your commit message does not follow Conventional Commits formatting
-https://www.conventionalcommits.org/
+Your commit message does not follow Customized Conventional Commits formatting
+https://gitmoji.dev/
 
-Conventional Commit messages follow a pattern like:
+Customized Conventional Commit messages follow a pattern like:
 
-    type(scope): subject
+    <emoji> <description>
 
-    extended body
+    optional extended body
+
+Examples:
+    🔖 Use latest versions of all items
+    ⚡️ Slightly upsize build storage
+    🔧 Update enabled items directory
 
 Please correct the following errors:
 
-  - Expected value for type from: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+  - Expected GitMoji emoji at the start. Examples: 🎨⚡️🔥🐛🚑️✨📝🚀💄🎉...
 
 Run:
 
     git commit --edit --file=.git/COMMIT_EDITMSG
 
 to edit the commit message and retry the commit.
+
+For a complete list of GitMoji emojis, visit: https://gitmoji.dev/
 ```
 
-Make a (conventional) commit :heavy_check_mark::
+Make a (customized conventional) commit :heavy_check_mark::
 
 ```console
-$ git commit -m "feat: add a new feature"
+$ git commit -m "✨ Add a new feature"
 
 [INFO] Initializing environment for ....
 Conventional Commit......................................................Passed
@@ -109,30 +122,30 @@ pip install conventional-pre-commit
 Then run the command line script:
 
 ```shell
-conventional-pre-commit [types] input
+conventional-pre-commit [emojis] input
 ```
 
-- `[types]` is an optional list of Conventional Commit types to allow (e.g. `feat fix chore`)
+- `[emojis]` is an optional list of GitMoji emojis to allow (e.g. `🔖 ⚡️ 🔧`)
 
 - `input` is a file containing the commit message to check:
 
 ```shell
-conventional-pre-commit feat fix chore ci test .git/COMMIT_MSG
+conventional-pre-commit 🔖 ⚡️ 🔧 🐛 ✨ .git/COMMIT_MSG
 ```
 
 Or from a Python program:
 
 ```python
-from conventional_pre_commit.format import is_conventional
+from conventional_pre_commit.format import is_customized_conventional
 
 # prints True
-print(is_conventional("feat: this is a conventional commit"))
+print(is_customized_conventional("🔖 Use latest versions of all items"))
 
 # prints False
-print(is_conventional("nope: this is not a conventional commit"))
+print(is_customized_conventional("nope: this is not a customized conventional commit"))
 
-# prints True
-print(is_conventional("custom: this is a conventional commit", types=["custom"]))
+# prints True with custom emojis
+print(is_customized_conventional("🔖 Use latest versions", emojis=["🔖", "⚡️"]))
 ```
 
 ## Passing `args`
@@ -141,21 +154,19 @@ print(is_conventional("custom: this is a conventional commit", types=["custom"])
 
 ```shell
 $ conventional-pre-commit -h
-usage: conventional-pre-commit [-h] [--no-color] [--force-scope] [--scopes SCOPES] [--strict] [--verbose] [types ...] input
+usage: conventional-pre-commit [-h] [--no-color] [--strict] [--verbose] [emojis ...] input
 
-Check a git commit message for Conventional Commits formatting.
+Check a git commit message for Customized Conventional Commits formatting using GitMoji.
 
 positional arguments:
-  types            Optional list of types to support
-  input            A file containing a git commit message
+  emojis       Optional list of additional GitMoji emojis to support
+  input        A file containing a git commit message
 
 options:
-  -h, --help       show this help message and exit
-  --no-color       Disable color in output.
-  --force-scope    Force commit to have scope defined.
-  --scopes SCOPES  List of scopes to support. Scopes should be separated by commas with no spaces (e.g. api,client).
-  --strict         Force commit to strictly follow Conventional Commits formatting. Disallows fixup! and merge commits.
-  --verbose        Print more verbose error output.
+  -h, --help   show this help message and exit
+  --no-color   Disable color in output.
+  --strict     Force commit to strictly follow Customized Conventional Commits formatting. Disallows fixup! and merge commits.
+  --verbose    Print more verbose error output.
 ```
 
 Supply arguments on the command-line, or via the pre-commit `hooks.args` property:
@@ -167,10 +178,29 @@ repos:
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
-        args: [--strict, --force-scope, feat, fix, chore, test, custom]
+        args: [--strict, 🔖, ⚡️, 🔧, 🐛, ✨]
 ```
 
 **NOTE:** when using as a pre-commit hook, `input` is supplied automatically (with the current commit's message).
+
+## Common GitMoji Examples
+
+Here are some commonly used GitMoji emojis and their meanings:
+
+| Emoji | Code                 | Description                            |
+| ----- | -------------------- | -------------------------------------- |
+| 🎨    | `:art:`              | Improve structure / format of the code |
+| ⚡️   | `:zap:`              | Improve performance                    |
+| 🔥    | `:fire:`             | Remove code or files                   |
+| 🐛    | `:bug:`              | Fix a bug                              |
+| ✨    | `:sparkles:`         | Introduce new features                 |
+| 📝    | `:memo:`             | Add or update documentation            |
+| 🔖    | `:bookmark:`         | Release / Version tags                 |
+| 🔧    | `:wrench:`           | Add or update configuration files      |
+| ✅    | `:white_check_mark:` | Add, update, or pass tests             |
+| 🚀    | `:rocket:`           | Deploy stuff                           |
+
+For a complete list of available emojis, visit [GitMoji](https://gitmoji.dev/).
 
 ## Development
 

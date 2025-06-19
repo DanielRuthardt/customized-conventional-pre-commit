@@ -1,6 +1,6 @@
 import os
 
-from conventional_pre_commit.format import ConventionalCommit
+from conventional_pre_commit.format import CustomizedConventionalCommit
 
 
 class Colors:
@@ -29,12 +29,12 @@ class Colors:
         return self.YELLOW if self.enabled else ""
 
 
-def fail(commit: ConventionalCommit, use_color=True):
+def fail(commit: CustomizedConventionalCommit, use_color=True):
     c = Colors(use_color)
     lines = [
-        f"{c.red}[Bad commit message] >>{c.restore} {commit.message}"
-        f"{c.yellow}Your commit message does not follow Conventional Commits formatting{c.restore}",
-        f"{c.blue}https://www.conventionalcommits.org/{c.restore}",
+        f"{c.red}[Bad commit message] >>{c.restore} {commit.message}",
+        f"{c.yellow}Your commit message does not follow Customized Conventional Commits formatting{c.restore}",
+        f"{c.blue}https://gitmoji.dev/{c.restore}",
     ]
     return os.linesep.join(lines)
 
@@ -48,36 +48,39 @@ def verbose_arg(use_color=True):
     return os.linesep.join(lines)
 
 
-def fail_verbose(commit: ConventionalCommit, use_color=True):
+def fail_verbose(commit: CustomizedConventionalCommit, use_color=True):
     c = Colors(use_color)
     lines = [
         "",
-        f"{c.yellow}Conventional Commit messages follow a pattern like:",
+        f"{c.yellow}Customized Conventional Commit messages follow a pattern like:",
         "",
-        f"{c.restore}    type(scope): subject",
+        f"{c.restore}    <emoji> <description>",
         "",
-        "    extended body",
+        "    optional extended body",
+        "",
+        f"{c.yellow}Examples:",
+        f"{c.restore}    🔖 Use latest versions of all items",
+        f"{c.restore}    ⚡️ Slightly upsize build storage",
+        f"{c.restore}    🔧 Update enabled items directory",
         "",
     ]
 
-    def _options(opts):
-        formatted_opts = f"{c.yellow}, {c.blue}".join(opts)
-        return f"{c.blue}{formatted_opts}"
+    def _format_emojis(emojis):
+        # Show a sample of available emojis
+        sample_emojis = emojis[:10]  # Show first 10 emojis
+        formatted_emojis = f"{c.blue}".join(sample_emojis)
+        return f"{c.blue}{formatted_emojis}"
 
     errors = commit.errors()
     if errors:
         lines.append(f"{c.yellow}Please correct the following errors:{c.restore}")
         lines.append("")
         for group in errors:
-            if group == "type":
-                type_opts = _options(commit.types)
-                lines.append(f"{c.yellow}  - Expected value for {c.restore}type{c.yellow} from: {type_opts}")
-            elif group == "scope":
-                if commit.scopes:
-                    scopt_opts = _options(commit.scopes)
-                    lines.append(f"{c.yellow}  - Expected value for {c.restore}scope{c.yellow} from: {scopt_opts}")
-                else:
-                    lines.append(f"{c.yellow}  - Expected value for {c.restore}scope{c.yellow} but found none.{c.restore}")
+            if group == "emoji":
+                emoji_sample = _format_emojis(commit.emojis)
+                lines.append(f"{c.yellow}  - Expected GitMoji emoji at the start. Examples: {emoji_sample}...")
+            elif group == "description":
+                lines.append(f"{c.yellow}  - Expected description after the emoji (e.g., 'Fix authentication bug'){c.restore}")
             else:
                 lines.append(f"{c.yellow}  - Expected value for {c.restore}{group}{c.yellow} but found none.{c.restore}")
 
@@ -89,6 +92,8 @@ def fail_verbose(commit: ConventionalCommit, use_color=True):
             "    git commit --edit --file=.git/COMMIT_EDITMSG",
             "",
             f"{c.yellow}to edit the commit message and retry the commit.{c.restore}",
+            "",
+            f"{c.yellow}For a complete list of GitMoji emojis, visit: {c.blue}https://gitmoji.dev/{c.restore}",
         ]
     )
     return os.linesep.join(lines)

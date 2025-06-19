@@ -62,3 +62,24 @@ def conventional_commit_multi_line_path():
 @pytest.fixture
 def conventional_commit_with_multiple_scopes_path():
     return get_message_path("conventional_commit_with_multiple_scopes")
+
+
+# GitMoji test message fixtures
+@pytest.fixture
+def gitmoji_commit_path():
+    return get_message_path("gitmoji_commit")
+
+
+@pytest.fixture
+def gitmoji_commit_multiline_path():
+    return get_message_path("gitmoji_commit_multiline")
+
+
+@pytest.fixture
+def gitmoji_commit_config_path():
+    return get_message_path("gitmoji_commit_config")
+
+
+@pytest.fixture
+def bad_gitmoji_commit_path():
+    return get_message_path("bad_gitmoji_commit")

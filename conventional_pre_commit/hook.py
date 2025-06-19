@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from conventional_pre_commit import output
-from conventional_pre_commit.format import ConventionalCommit
+from conventional_pre_commit.format import CustomizedConventionalCommit
 
 RESULT_SUCCESS = 0
 RESULT_FAIL = 1
@@ -10,26 +10,17 @@ RESULT_FAIL = 1
 
 def main(argv=[]):
     parser = argparse.ArgumentParser(
-        prog="conventional-pre-commit", description="Check a git commit message for Conventional Commits formatting."
+        prog="conventional-pre-commit", description="Check a git commit message for Customized Conventional Commits formatting using GitMoji."
     )
     parser.add_argument(
-        "types", type=str, nargs="*", default=ConventionalCommit.DEFAULT_TYPES, help="Optional list of types to support"
+        "emojis", type=str, nargs="*", default=None, help="Optional list of additional GitMoji emojis to support"
     )
     parser.add_argument("input", type=str, help="A file containing a git commit message")
     parser.add_argument("--no-color", action="store_false", default=True, dest="color", help="Disable color in output.")
     parser.add_argument(
-        "--force-scope", action="store_false", default=True, dest="optional_scope", help="Force commit to have scope defined."
-    )
-    parser.add_argument(
-        "--scopes",
-        type=str,
-        default=None,
-        help="List of scopes to support. Scopes should be separated by commas with no spaces (e.g. api,client).",
-    )
-    parser.add_argument(
         "--strict",
         action="store_true",
-        help="Force commit to strictly follow Conventional Commits formatting. Disallows fixup! and merge commits.",
+        help="Force commit to strictly follow Customized Conventional Commits formatting. Disallows fixup! and merge commits.",
     )
     parser.add_argument(
         "--verbose",
@@ -53,12 +44,11 @@ def main(argv=[]):
     except UnicodeDecodeError:
         print(output.unicode_decode_error(args.color))
         return RESULT_FAIL
-    if args.scopes:
-        scopes = args.scopes.split(",")
-    else:
-        scopes = args.scopes
 
-    commit = ConventionalCommit(commit_msg, args.types, args.optional_scope, scopes)
+    # Use custom emojis if provided, otherwise use default
+    emojis = args.emojis if args.emojis else None
+
+    commit = CustomizedConventionalCommit(commit_msg, emojis)
 
     if not args.strict:
         if commit.has_autosquash_prefix():

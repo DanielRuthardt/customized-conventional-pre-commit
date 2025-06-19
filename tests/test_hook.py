@@ -250,3 +250,101 @@ def test_subprocess_fail__conventional_commit_bad_multi_line(cmd, conventional_c
     result = subprocess.call((cmd, conventional_commit_bad_multi_line_path))
 
     assert result == RESULT_FAIL
+
+
+# Tests for GitMoji format
+
+def test_main_success__gitmoji_commit(gitmoji_commit_path):
+    result = main([gitmoji_commit_path])
+
+    assert result == RESULT_SUCCESS
+
+
+def test_main_success__gitmoji_commit_multiline(gitmoji_commit_multiline_path):
+    result = main([gitmoji_commit_multiline_path])
+
+    assert result == RESULT_SUCCESS
+
+
+def test_main_success__gitmoji_config_commit(gitmoji_commit_config_path):
+    result = main([gitmoji_commit_config_path])
+
+    assert result == RESULT_SUCCESS
+
+
+def test_main_fail__bad_gitmoji_commit(bad_gitmoji_commit_path):
+    result = main([bad_gitmoji_commit_path])
+
+    assert result == RESULT_FAIL
+
+
+def test_main_fail__gitmoji_verbose(bad_gitmoji_commit_path, capsys):
+    result = main(["--verbose", bad_gitmoji_commit_path])
+
+    assert result == RESULT_FAIL
+
+    captured = capsys.readouterr()
+    output = captured.out
+
+    assert Colors.LBLUE in output
+    assert Colors.LRED in output
+    assert Colors.RESTORE in output
+    assert Colors.YELLOW in output
+    assert "Customized Conventional Commit messages follow a pattern like" in output
+    assert "<emoji> <description>" in output
+    assert "🔖 Use latest versions of all items" in output
+    assert "⚡️ Slightly upsize build storage" in output
+    assert "🔧 Update enabled items directory" in output
+    assert "https://gitmoji.dev/" in output
+    assert "git commit --edit --file=.git/COMMIT_EDITMSG" in output
+
+
+def test_main_fail__gitmoji_no_color(bad_gitmoji_commit_path, capsys):
+    result = main(["--verbose", "--no-color", bad_gitmoji_commit_path])
+
+    assert result == RESULT_FAIL
+
+    captured = capsys.readouterr()
+    output = captured.out
+
+    assert Colors.LBLUE not in output
+    assert Colors.LRED not in output
+    assert Colors.RESTORE not in output
+    assert Colors.YELLOW not in output
+
+
+def test_main_success__gitmoji_with_custom_emojis(gitmoji_commit_path):
+    result = main(["🔖", "⚡️", "🔧", gitmoji_commit_path])
+
+    assert result == RESULT_SUCCESS
+
+
+def test_main_fail__gitmoji_with_limited_emojis(gitmoji_commit_multiline_path):
+    # The multiline commit uses ⚡️ but we only allow 🔖
+    result = main(["🔖", gitmoji_commit_multiline_path])
+
+    assert result == RESULT_FAIL
+
+
+def test_subprocess_success__gitmoji_commit(cmd, gitmoji_commit_path):
+    result = subprocess.call((cmd, gitmoji_commit_path))
+
+    assert result == RESULT_SUCCESS
+
+
+def test_subprocess_success__gitmoji_commit_multiline(cmd, gitmoji_commit_multiline_path):
+    result = subprocess.call((cmd, gitmoji_commit_multiline_path))
+
+    assert result == RESULT_SUCCESS
+
+
+def test_subprocess_fail__bad_gitmoji_commit(cmd, bad_gitmoji_commit_path):
+    result = subprocess.call((cmd, bad_gitmoji_commit_path))
+
+    assert result == RESULT_FAIL
+
+
+def test_subprocess_success__gitmoji_with_custom_emojis(cmd, gitmoji_commit_path):
+    result = subprocess.call((cmd, "🔖", "⚡️", "🔧", gitmoji_commit_path))
+
+    assert result == RESULT_SUCCESS

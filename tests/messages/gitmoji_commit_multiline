@@ -1,0 +1,4 @@
+⚡️ Slightly upsize build storage
+
+This change increases the build storage capacity
+to handle larger repositories more efficiently.
